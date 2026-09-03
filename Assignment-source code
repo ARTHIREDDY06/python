@@ -1,0 +1,1155 @@
+import tkinter as tk
+from tkinter import messagebox, simpledialog
+
+
+# =========================================================
+# WATER RECORDS - DICTIONARY OF LISTS
+# =========================================================
+
+water = {
+    "id": [],
+    "zone": [],
+    "supplied": [],
+    "date": [],
+    "consumed": []
+}
+
+
+# =========================================================
+# CONSUMPTION CATEGORY
+# =========================================================
+
+def get_category(index):
+
+    supplied = water["supplied"][index]
+    consumed = water["consumed"][index]
+
+    if supplied == 0:
+        return "Invalid"
+
+    percent = (consumed / supplied) * 100
+
+    if percent < 50:
+        return "Low Consumption"
+    elif percent <= 80:
+        return "Moderate Consumption"
+    else:
+        return "High Consumption"
+
+
+# =========================================================
+# CLEAR INPUT FIELDS
+# =========================================================
+
+def clear_fields():
+
+    id_entry.delete(0, tk.END)
+    zone_entry.delete(0, tk.END)
+    supplied_entry.delete(0, tk.END)
+    date_entry.delete(0, tk.END)
+    consumed_entry.delete(0, tk.END)
+
+
+# =========================================================
+# 1. ADD WATER DISTRIBUTION RECORD
+# =========================================================
+
+def add_record():
+
+    household_id = id_entry.get().strip()
+    zone = zone_entry.get().strip()
+    supplied = supplied_entry.get().strip()
+    date = date_entry.get().strip()
+    consumed = consumed_entry.get().strip()
+
+    if not household_id or not zone or not supplied or not date or not consumed:
+        messagebox.showwarning(
+            "Missing Data",
+            "Please enter all details."
+        )
+        return
+
+    try:
+        supplied = float(supplied)
+        consumed = float(consumed)
+    except ValueError:
+        messagebox.showerror(
+            "Invalid Data",
+            "Water values must be numbers."
+        )
+        return
+
+    if supplied <= 0 or consumed < 0:
+        messagebox.showerror(
+            "Invalid Data",
+            "Enter valid water values."
+        )
+        return
+
+    if consumed > supplied:
+        messagebox.showwarning(
+            "Warning",
+            "Consumption cannot be greater than supplied water."
+        )
+        return
+
+    water["id"].append(household_id)
+    water["zone"].append(zone)
+    water["supplied"].append(supplied)
+    water["date"].append(date)
+    water["consumed"].append(consumed)
+
+    messagebox.showinfo(
+        "Success",
+        "Water distribution record added successfully."
+    )
+
+    clear_fields()
+    update_dashboard()
+
+
+# =========================================================
+# 2. DISPLAY ALL RECORDS
+# =========================================================
+
+def display_records():
+
+    output.delete("1.0", tk.END)
+
+    if len(water["id"]) == 0:
+        output.insert(tk.END, "No records available.\n")
+        return
+
+    output.insert(
+        tk.END,
+        "WATER DISTRIBUTION RECORDS\n"
+    )
+    output.insert(
+        tk.END,
+        "=" * 100 + "\n"
+    )
+
+    heading = (
+        f"{'ID':<12}"
+        f"{'ZONE':<15}"
+        f"{'SUPPLIED':<15}"
+        f"{'DATE':<15}"
+        f"{'CONSUMED':<15}"
+        f"CATEGORY\n"
+    )
+
+    output.insert(tk.END, heading)
+    output.insert(tk.END, "-" * 100 + "\n")
+
+    for i in range(len(water["id"])):
+
+        output.insert(
+            tk.END,
+            f"{water['id'][i]:<12}"
+            f"{water['zone'][i]:<15}"
+            f"{water['supplied'][i]:<15.2f}"
+            f"{water['date'][i]:<15}"
+            f"{water['consumed'][i]:<15.2f}"
+            f"{get_category(i)}\n"
+        )
+
+
+# =========================================================
+# 3. SEARCH RECORDS
+# =========================================================
+
+def search_records():
+
+    keyword = search_entry.get().strip().lower()
+
+    output.delete("1.0", tk.END)
+
+    if keyword == "":
+        display_records()
+        return
+
+    found = False
+
+    output.insert(
+        tk.END,
+        "SEARCH RESULTS\n"
+    )
+    output.insert(
+        tk.END,
+        "=" * 100 + "\n"
+    )
+
+    for i in range(len(water["id"])):
+
+        if (
+            keyword in water["id"][i].lower()
+            or keyword in water["zone"][i].lower()
+            or keyword in water["date"][i].lower()
+        ):
+
+            output.insert(
+                tk.END,
+                f"ID         : {water['id'][i]}\n"
+                f"Zone       : {water['zone'][i]}\n"
+                f"Supplied   : {water['supplied'][i]:.2f} L\n"
+                f"Date       : {water['date'][i]}\n"
+                f"Consumed   : {water['consumed'][i]:.2f} L\n"
+                f"Category   : {get_category(i)}\n"
+                f"{'-' * 60}\n"
+            )
+
+            found = True
+
+    if not found:
+        output.insert(
+            tk.END,
+            "No matching records found.\n"
+        )
+
+
+# =========================================================
+# 4. CONSUMPTION CLASSIFICATION
+# =========================================================
+
+def show_classification():
+
+    output.delete("1.0", tk.END)
+
+    if len(water["id"]) == 0:
+        output.insert(tk.END, "No records available.")
+        return
+
+    output.insert(
+        tk.END,
+        "CONSUMPTION CLASSIFICATION\n"
+    )
+    output.insert(
+        tk.END,
+        "=" * 60 + "\n\n"
+    )
+
+    for i in range(len(water["id"])):
+
+        supplied = water["supplied"][i]
+        consumed = water["consumed"][i]
+
+        percentage = (consumed / supplied) * 100
+        category = get_category(i)
+
+        output.insert(
+            tk.END,
+            f"ID: {water['id'][i]}\n"
+            f"Zone: {water['zone'][i]}\n"
+            f"Consumption: {consumed:.2f} L\n"
+            f"Usage Percentage: {percentage:.2f}%\n"
+            f"Classification: {category}\n"
+            f"{'-' * 60}\n"
+        )
+
+
+# =========================================================
+# 5. WATER ANALYSIS
+# =========================================================
+
+def water_analysis():
+
+    output.delete("1.0", tk.END)
+
+    if len(water["id"]) == 0:
+        output.insert(tk.END, "No records available.")
+        return
+
+    total_supplied = sum(water["supplied"])
+    total_consumed = sum(water["consumed"])
+    remaining = total_supplied - total_consumed
+
+    average = total_consumed / len(water["consumed"])
+
+    if total_supplied > 0:
+        percentage = (total_consumed / total_supplied) * 100
+    else:
+        percentage = 0
+
+    output.insert(
+        tk.END,
+        "WATER ANALYSIS\n"
+    )
+
+    output.insert(
+        tk.END,
+        "=" * 60 + "\n\n"
+    )
+
+    output.insert(
+        tk.END,
+        f"Total Water Supplied     : {total_supplied:.2f} L\n\n"
+    )
+
+    output.insert(
+        tk.END,
+        f"Total Water Consumed     : {total_consumed:.2f} L\n\n"
+    )
+
+    output.insert(
+        tk.END,
+        f"Remaining Water          : {remaining:.2f} L\n\n"
+    )
+
+    output.insert(
+        tk.END,
+        f"Average Consumption      : {average:.2f} L\n\n"
+    )
+
+    output.insert(
+        tk.END,
+        f"Consumption Percentage   : {percentage:.2f}%\n"
+    )
+
+
+# =========================================================
+# 6. IDENTIFY EXCESSIVE CONSUMPTION
+# =========================================================
+
+def excessive_consumption():
+
+    limit = simpledialog.askfloat(
+        "Consumption Limit",
+        "Enter maximum consumption limit in litres:"
+    )
+
+    if limit is None:
+        return
+
+    output.delete("1.0", tk.END)
+
+    output.insert(
+        tk.END,
+        "EXCESSIVE WATER CONSUMPTION\n"
+    )
+
+    output.insert(
+        tk.END,
+        "=" * 70 + "\n\n"
+    )
+
+    found = False
+
+    for i in range(len(water["id"])):
+
+        if water["consumed"][i] > limit:
+
+            output.insert(
+                tk.END,
+                f"ID          : {water['id'][i]}\n"
+                f"Zone        : {water['zone'][i]}\n"
+                f"Consumption : {water['consumed'][i]:.2f} L\n"
+                f"Limit       : {limit:.2f} L\n"
+                f"{'-' * 60}\n"
+            )
+
+            found = True
+
+    if not found:
+
+        output.insert(
+            tk.END,
+            "No household exceeds the specified limit."
+        )
+
+
+# =========================================================
+# 7. ZONE-WISE ANALYSIS
+# =========================================================
+
+def zone_analysis():
+
+    output.delete("1.0", tk.END)
+
+    if len(water["id"]) == 0:
+        output.insert(tk.END, "No records available.")
+        return
+
+    zones = set(water["zone"])
+
+    output.insert(
+        tk.END,
+        "ZONE-WISE WATER CONSUMPTION\n"
+    )
+
+    output.insert(
+        tk.END,
+        "=" * 60 + "\n\n"
+    )
+
+    for zone in zones:
+
+        zone_total = 0
+        zone_users = 0
+
+        for i in range(len(water["zone"])):
+
+            if water["zone"][i] == zone:
+
+                zone_total += water["consumed"][i]
+                zone_users += 1
+
+        output.insert(
+            tk.END,
+            f"Zone             : {zone}\n"
+            f"Number of Users  : {zone_users}\n"
+            f"Total Consumption: {zone_total:.2f} L\n"
+            f"{'-' * 60}\n"
+        )
+
+
+# =========================================================
+# 8. UNIQUE DATA ANALYSIS
+# =========================================================
+
+def unique_analysis():
+
+    output.delete("1.0", tk.END)
+
+    unique_users = set(water["id"])
+    unique_zones = set(water["zone"])
+    unique_categories = set()
+
+    for i in range(len(water["id"])):
+
+        unique_categories.add(
+            get_category(i)
+        )
+
+    output.insert(
+        tk.END,
+        "UNIQUE DATA ANALYSIS\n"
+    )
+
+    output.insert(
+        tk.END,
+        "=" * 60 + "\n\n"
+    )
+
+    output.insert(
+        tk.END,
+        "Unique Household / Building IDs:\n"
+    )
+
+    output.insert(
+        tk.END,
+        str(unique_users) + "\n\n"
+    )
+
+    output.insert(
+        tk.END,
+        "Unique Zones:\n"
+    )
+
+    output.insert(
+        tk.END,
+        str(unique_zones) + "\n\n"
+    )
+
+    output.insert(
+        tk.END,
+        "Unique Consumption Categories:\n"
+    )
+
+    output.insert(
+        tk.END,
+        str(unique_categories) + "\n"
+    )
+
+
+# =========================================================
+# 9. SAVE RECORDS
+# =========================================================
+
+def save_records():
+
+    try:
+
+        with open("water_records.txt", "w") as file:
+
+            for i in range(len(water["id"])):
+
+                line = (
+                    water["id"][i] + "|" +
+                    water["zone"][i] + "|" +
+                    str(water["supplied"][i]) + "|" +
+                    water["date"][i] + "|" +
+                    str(water["consumed"][i]) + "\n"
+                )
+
+                file.write(line)
+
+        messagebox.showinfo(
+            "Saved",
+            "Water records saved successfully."
+        )
+
+    except Exception as error:
+
+        messagebox.showerror(
+            "Error",
+            str(error)
+        )
+
+
+# =========================================================
+# 9. LOAD PREVIOUS RECORDS
+# =========================================================
+
+def load_records():
+
+    try:
+
+        with open("water_records.txt", "r") as file:
+
+            for key in water:
+                water[key].clear()
+
+            for line in file:
+
+                values = line.strip().split("|")
+
+                if len(values) == 5:
+
+                    water["id"].append(values[0])
+                    water["zone"].append(values[1])
+                    water["supplied"].append(float(values[2]))
+                    water["date"].append(values[3])
+                    water["consumed"].append(float(values[4]))
+
+        messagebox.showinfo(
+            "Loaded",
+            "Previous records loaded successfully."
+        )
+
+        update_dashboard()
+        display_records()
+
+    except FileNotFoundError:
+
+        messagebox.showwarning(
+            "File Not Found",
+            "No saved water records were found."
+        )
+
+
+# =========================================================
+# 9. GENERATE ANALYTICAL REPORT
+# =========================================================
+
+def generate_report():
+
+    if len(water["id"]) == 0:
+
+        messagebox.showwarning(
+            "No Data",
+            "Add records before generating a report."
+        )
+
+        return
+
+    total_supplied = sum(water["supplied"])
+    total_consumed = sum(water["consumed"])
+    remaining = total_supplied - total_consumed
+    average = total_consumed / len(water["consumed"])
+
+    if total_supplied > 0:
+        percentage = (total_consumed / total_supplied) * 100
+    else:
+        percentage = 0
+
+    try:
+
+        with open("water_analysis_report.txt", "w") as file:
+
+            file.write(
+                "SMART WATER DISTRIBUTION ANALYTICAL REPORT\n"
+            )
+
+            file.write("=" * 55 + "\n\n")
+
+            file.write(
+                f"Total Water Supplied   : {total_supplied:.2f} L\n"
+            )
+
+            file.write(
+                f"Total Water Consumed   : {total_consumed:.2f} L\n"
+            )
+
+            file.write(
+                f"Remaining Water        : {remaining:.2f} L\n"
+            )
+
+            file.write(
+                f"Average Consumption    : {average:.2f} L\n"
+            )
+
+            file.write(
+                f"Consumption Percentage : {percentage:.2f}%\n\n"
+            )
+
+            file.write("ZONE-WISE ANALYSIS\n")
+            file.write("-" * 40 + "\n")
+
+            for zone in set(water["zone"]):
+
+                total = 0
+
+                for i in range(len(water["zone"])):
+
+                    if water["zone"][i] == zone:
+                        total += water["consumed"][i]
+
+                file.write(
+                    f"{zone}: {total:.2f} L\n"
+                )
+
+        messagebox.showinfo(
+            "Report Created",
+            "Analytical report saved as water_analysis_report.txt"
+        )
+
+    except Exception as error:
+
+        messagebox.showerror(
+            "Error",
+            str(error)
+        )
+
+
+# =========================================================
+# DASHBOARD UPDATE
+# =========================================================
+
+def update_dashboard():
+
+    total_supply = sum(water["supplied"])
+    total_use = sum(water["consumed"])
+    balance = total_supply - total_use
+
+    if total_supply > 0:
+        rate = (total_use / total_supply) * 100
+    else:
+        rate = 0
+
+    supply_value.config(
+        text=f"{total_supply:.0f} L"
+    )
+
+    consumed_value.config(
+        text=f"{total_use:.0f} L"
+    )
+
+    remaining_value.config(
+        text=f"{balance:.0f} L"
+    )
+
+    rate_value.config(
+        text=f"{rate:.1f}%"
+    )
+
+
+# =========================================================
+# MAIN WINDOW
+# =========================================================
+
+root = tk.Tk()
+
+root.title(
+    "Smart Water Distribution and Consumption Analytics"
+)
+
+root.geometry("1150x760")
+
+root.configure(
+    bg="#eef5f7"
+)
+
+
+# =========================================================
+# HEADER
+# =========================================================
+
+header = tk.Frame(
+    root,
+    bg="#087f8c",
+    height=85
+)
+
+header.pack(
+    fill="x"
+)
+
+tk.Label(
+    header,
+    text="💧 SMART WATER MANAGEMENT SYSTEM",
+    bg="#087f8c",
+    fg="white",
+    font=("Arial", 22, "bold")
+).pack(
+    pady=(12, 3)
+)
+
+tk.Label(
+    header,
+    text="Water Distribution & Consumption Analytics",
+    bg="#087f8c",
+    fg="white",
+    font=("Arial", 11)
+).pack()
+
+
+# =========================================================
+# LEFT MENU
+# =========================================================
+
+menu = tk.Frame(
+    root,
+    bg="#12343b",
+    width=210
+)
+
+menu.pack(
+    side="left",
+    fill="y"
+)
+
+
+tk.Label(
+    menu,
+    text="MENU",
+    bg="#12343b",
+    fg="white",
+    font=("Arial", 16, "bold")
+).pack(
+    pady=20
+)
+
+
+def menu_button(text, command):
+
+    tk.Button(
+        menu,
+        text=text,
+        command=command,
+        bg="#1b5962",
+        fg="white",
+        activebackground="#087f8c",
+        activeforeground="white",
+        relief="flat",
+        width=21,
+        pady=8,
+        font=("Arial", 10)
+    ).pack(
+        pady=3
+    )
+
+
+menu_button(
+    "Dashboard",
+    water_analysis
+)
+
+menu_button(
+    "Add Record",
+    lambda: id_entry.focus()
+)
+
+menu_button(
+    "Display Records",
+    display_records
+)
+
+menu_button(
+    "Search Records",
+    search_records
+)
+
+menu_button(
+    "Classification",
+    show_classification
+)
+
+menu_button(
+    "Water Analysis",
+    water_analysis
+)
+
+menu_button(
+    "Excessive Consumption",
+    excessive_consumption
+)
+
+menu_button(
+    "Zone Analysis",
+    zone_analysis
+)
+
+menu_button(
+    "Unique Data",
+    unique_analysis
+)
+
+menu_button(
+    "Save Records",
+    save_records
+)
+
+menu_button(
+    "Load Records",
+    load_records
+)
+
+menu_button(
+    "Generate Report",
+    generate_report
+)
+
+
+# =========================================================
+# MAIN CONTENT
+# =========================================================
+
+main = tk.Frame(
+    root,
+    bg="#eef5f7"
+)
+
+main.pack(
+    side="left",
+    fill="both",
+    expand=True
+)
+
+
+# =========================================================
+# DASHBOARD CARDS
+# =========================================================
+
+cards = tk.Frame(
+    main,
+    bg="#eef5f7"
+)
+
+cards.pack(
+    fill="x",
+    padx=20,
+    pady=20
+)
+
+
+def create_card(parent, title):
+
+    frame = tk.Frame(
+        parent,
+        bg="white",
+        width=190,
+        height=100
+    )
+
+    frame.pack(
+        side="left",
+        expand=True,
+        fill="both",
+        padx=6
+    )
+
+    tk.Label(
+        frame,
+        text=title,
+        bg="white",
+        fg="#64748b",
+        font=("Arial", 10, "bold")
+    ).pack(
+        pady=(15, 5)
+    )
+
+    value = tk.Label(
+        frame,
+        text="0 L",
+        bg="white",
+        fg="#087f8c",
+        font=("Arial", 20, "bold")
+    )
+
+    value.pack()
+
+    return value
+
+
+supply_value = create_card(
+    cards,
+    "TOTAL SUPPLIED"
+)
+
+consumed_value = create_card(
+    cards,
+    "TOTAL CONSUMED"
+)
+
+remaining_value = create_card(
+    cards,
+    "REMAINING WATER"
+)
+
+rate_value = create_card(
+    cards,
+    "CONSUMPTION RATE"
+)
+
+
+# =========================================================
+# ADD RECORD SECTION
+# =========================================================
+
+form = tk.LabelFrame(
+    main,
+    text=" Add Water Distribution Record ",
+    bg="white",
+    fg="#12343b",
+    font=("Arial", 12, "bold"),
+    padx=15,
+    pady=10
+)
+
+form.pack(
+    fill="x",
+    padx=20,
+    pady=5
+)
+
+
+tk.Label(
+    form,
+    text="Household / Building ID",
+    bg="white"
+).grid(
+    row=0,
+    column=0,
+    padx=8,
+    pady=6
+)
+
+id_entry = tk.Entry(
+    form,
+    width=20
+)
+
+id_entry.grid(
+    row=0,
+    column=1,
+    padx=8
+)
+
+
+tk.Label(
+    form,
+    text="Area / Zone",
+    bg="white"
+).grid(
+    row=0,
+    column=2,
+    padx=8
+)
+
+zone_entry = tk.Entry(
+    form,
+    width=20
+)
+
+zone_entry.grid(
+    row=0,
+    column=3,
+    padx=8
+)
+
+
+tk.Label(
+    form,
+    text="Supplied (L)",
+    bg="white"
+).grid(
+    row=1,
+    column=0,
+    padx=8,
+    pady=6
+)
+
+supplied_entry = tk.Entry(
+    form,
+    width=20
+)
+
+supplied_entry.grid(
+    row=1,
+    column=1,
+    padx=8
+)
+
+
+tk.Label(
+    form,
+    text="Date",
+    bg="white"
+).grid(
+    row=1,
+    column=2,
+    padx=8
+)
+
+date_entry = tk.Entry(
+    form,
+    width=20
+)
+
+date_entry.grid(
+    row=1,
+    column=3,
+    padx=8
+)
+
+
+tk.Label(
+    form,
+    text="Consumption (L)",
+    bg="white"
+).grid(
+    row=2,
+    column=0,
+    padx=8,
+    pady=6
+)
+
+consumed_entry = tk.Entry(
+    form,
+    width=20
+)
+
+consumed_entry.grid(
+    row=2,
+    column=1,
+    padx=8
+)
+
+
+tk.Button(
+    form,
+    text="ADD RECORD",
+    command=add_record,
+    bg="#087f8c",
+    fg="white",
+    width=18,
+    pady=6
+).grid(
+    row=2,
+    column=3,
+    padx=8,
+    pady=6
+)
+
+
+# =========================================================
+# SEARCH SECTION
+# =========================================================
+
+search_frame = tk.Frame(
+    main,
+    bg="#eef5f7"
+)
+
+search_frame.pack(
+    fill="x",
+    padx=20,
+    pady=10
+)
+
+
+tk.Label(
+    search_frame,
+    text="Search ID / Zone / Date:",
+    bg="#eef5f7",
+    font=("Arial", 10, "bold")
+).pack(
+    side="left"
+)
+
+
+search_entry = tk.Entry(
+    search_frame,
+    width=30
+)
+
+search_entry.pack(
+    side="left",
+    padx=10
+)
+
+
+tk.Button(
+    search_frame,
+    text="SEARCH",
+    command=search_records,
+    bg="#087f8c",
+    fg="white",
+    width=12
+).pack(
+    side="left"
+)
+
+
+# =========================================================
+# OUTPUT AREA
+# =========================================================
+
+output_frame = tk.Frame(
+    main,
+    bg="white"
+)
+
+output_frame.pack(
+    fill="both",
+    expand=True,
+    padx=20,
+    pady=(0, 20)
+)
+
+
+output = tk.Text(
+    output_frame,
+    bg="white",
+    fg="#1e293b",
+    font=("Consolas", 10),
+    wrap="none"
+)
+
+output.pack(
+    side="left",
+    fill="both",
+    expand=True
+)
+
+
+scroll = tk.Scrollbar(
+    output_frame,
+    command=output.yview
+)
+
+scroll.pack(
+    side="right",
+    fill="y"
+)
+
+output.config(
+    yscrollcommand=scroll.set
+)
+
+
+# =========================================================
+# START PROGRAM
+# =========================================================
+
+root.mainloop()
